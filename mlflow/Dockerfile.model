@@ -1,0 +1,12 @@
+FROM python:3.9-slim
+
+RUN pip install mlflow==2.5.0 fastapi uvicorn scikit-learn
+
+COPY scripts/train_model.py /app/train_model.py
+
+WORKDIR /app
+
+# Placeholder for RUN_ID - replace with actual run ID after training
+ENV RUN_ID="placeholder_run_id"
+
+CMD ["sh", "-c", "python train_model.py && mlflow models serve -m runs:/${RUN_ID}/model --host 0.0.0.0 --port 8000"]
