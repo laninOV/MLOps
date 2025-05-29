@@ -1,0 +1,116 @@
+Terraform для создания S3 бакета в Yandex Cloud
+Этот проект содержит Terraform-манифесты для создания S3-совместимого бакета в Yandex Cloud. Конфигурация организована модульно, с разделением переменных на разные файлы, что соответствует лучшим практикам инфраструктуры как кода (IaC). Проект подходит для использования в MLOps, например, для хранения артефактов MLflow.
+Описание
+Проект использует Terraform для автоматического создания приватного S3-бакета в Yandex Cloud с включенной поддержкой версионирования. Основные особенности:
+
+Модульная структура с выделенным модулем для S3.
+Разделение переменных на файлы variables.tf (объявления) и terraform.tfvars (значения).
+Безопасное хранение чувствительных данных (токены, ключи).
+Поддержка вывода информации о созданном бакете (ID и endpoint).
+
+Требования
+Для работы с проектом вам понадобятся:
+
+Установленный Terraform (версия >= 1.5.0).
+Аккаунт в Yandex Cloud с доступом к сервисам хранения (Object Storage).
+OAuth-токен, ID облака, ID папки, а также ключи доступа (access key и secret key) для S3.
+Утилита yc (Yandex Cloud CLI) для удобной работы с облаком (опционально).
+
+Установка
+
+Клонируйте репозиторий:
+git clone <URL_вашего_репозитория>
+cd terraform
+
+
+Настройте Yandex Cloud:
+
+Создайте сервисный аккаунт с ролью storage.admin.
+Получите OAuth-токен, ID облака, ID папки и ключи доступа для S3 через консоль Yandex Cloud или CLI.
+
+
+Обновите terraform.tfvars:Откройте файл terraform.tfvars и замените placeholders на ваши значения:
+yc_token    = "your_oauth_token"
+cloud_id    = "your_cloud_id"
+folder_id   = "your_folder_id"
+zone        = "ru-central1-a"
+bucket_name = "mlflow-artifact-bucket"
+access_key  = "your_access_key"
+secret_key  = "your_secret_key"
+
+Важно: Храните этот файл в безопасном месте и добавьте его в .gitignore.
+
+Инициализируйте Terraform:
+terraform init
+
+
+
+Использование
+
+Проверьте план выполнения:
+terraform plan
+
+Это покажет, какие ресурсы будут созданы (S3-бакет).
+
+Примените конфигурацию:
+terraform apply
+
+Подтвердите выполнение, введя yes. После завершения Terraform выведет ID и endpoint созданного бакета.
+
+Проверьте результат:
+
+Используйте Yandex Cloud Console или CLI для проверки созданного бакета.
+Вывод Terraform (например, bucket_endpoint) можно использовать для настройки приложений, таких как MLflow.
+
+
+Удаление ресурсов (при необходимости):
+terraform destroy
+
+
+
+Структура проекта
+terraform/
+├── main.tf              # Основной файл, вызывающий модуль S3
+├── variables.tf         # Объявление переменных
+├── terraform.tfvars     # Значения переменных
+├── providers.tf         # Конфигурация провайдера Yandex Cloud
+├── outputs.tf           # Вывод информации о бакете
+├── modules/
+│   └── s3/
+│       ├── main.tf      # Логика создания S3 бакета
+│       ├── variables.tf # Переменные модуля
+│       ├── outputs.tf   # Выводы модуля
+
+Выводы
+После применения Terraform вы получите следующие выводы:
+
+bucket_id: Уникальный идентификатор созданного бакета.
+bucket_endpoint: URL-адрес бакета, например, https://mlflow-artifact-bucket.storage.yandexcloud.net.
+
+Безопасность
+
+Переменные yc_token, access_key и secret_key помечены как sensitive для предотвращения их отображения в логах.
+Не коммитьте terraform.tfvars в репозиторий. Используйте .gitignore:terraform.tfvars
+.terraform/
+*.tfstate
+*.tfstate.backup
+
+
+
+Интеграция с MLflow
+Этот бакет может использоваться как хранилище артефактов для MLflow. Настройте MLflow следующим образом:
+export MLFLOW_S3_ENDPOINT_URL=https://storage.yandexcloud.net
+export AWS_ACCESS_KEY_ID=your_access_key
+export AWS_SECRET_ACCESS_KEY=your_secret_key
+mlflow server --default-artifact-root s3://mlflow-artifact-bucket/mlflow
+
+Устранение неполадок
+
+Ошибка авторизации: Убедитесь, что OAuth-токен и ключи S3 действительны, а сервисный аккаунт имеет роль storage.admin.
+Конфликт имени бакета: Имя бакета должно быть уникальным в Yandex Cloud. Измените bucket_name в terraform.tfvars.
+Проблемы с Terraform: Проверьте версию Terraform (terraform version) и обновите провайдер (terraform init -upgrade).
+
+Лицензия
+MIT License. Подробности см. в файле LICENSE.
+Контакты
+Если у вас есть вопросы или предложения, свяжитесь через Issues в репозитории.
