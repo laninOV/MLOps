@@ -1,0 +1,7 @@
+yc_token    = "your_oauth_token"
+cloud_id    = "your_cloud_id"
+folder_id   = "your_folder_id"
+zone        = "ru-central1-a"
+bucket_name = "mlflow-artifact-bucket"
+access_key  = "your_access_key"
+secret_key  = "your_secret_key"
