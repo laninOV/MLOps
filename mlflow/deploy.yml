@@ -1,0 +1,56 @@
+name: Deploy MLflow to Yandex Cloud
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Login to Yandex Container Registry
+      uses: docker/login-action@v2
+      with:
+        registry: cr.yandex
+        username: ${{ secrets.YC_REGISTRY_USER }}
+        password: ${{ secrets.YC_REGISTRY_PASSWORD }}
+
+    - name: Build and push MLflow image
+      run: |
+        docker build -f Dockerfile.mlflow -t cr.yandex/${{ secrets.YC_REGISTRY_ID }}/mlflow:latest .
+        docker push cr.yandex/${{ secrets.YC_REGISTRY_ID }}/mlflow:latest
+
+    - name: Build and push model image
+      run: |
+        docker build -f Dockerfile.model -t cr.yandex/${{ secrets.YC_REGISTRY_ID }}/model:latest .
+        docker push cr.yandex/${{ secrets.YC_REGISTRY_ID }}/model:latest
+
+    - name: Deploy to Yandex Cloud
+      env:
+        YC_TOKEN: ${{ secrets.YC_TOKEN }}
+        YC_CLOUD_ID: ${{ secrets.YC_CLOUD_ID }}
+        YC_FOLDER_ID: ${{ secrets.YC_FOLDER_ID }}
+      run: |
+        # Install Yandex Cloud CLI
+        curl https://storage.yandexcloud.net/yandexcloud-yc/install.sh | bash
+        yc init --token $YC_TOKEN --cloud-id $YC_CLOUD_ID --folder-id $YC_FOLDER_ID --no-user-interaction
+        
+        # Deploy using Docker Compose on a Yandex Cloud instance
+        yc compute instance create-with-container \
+          --name mlflow-server \
+          --zone ru-central1-a \
+          --platform-id standard-v3 \
+          --cores 2 \
+          --memory 4GB \
+          --docker-compose-file ./docker-compose.yml \
+          --service-account-name mlflow-service-account \
+          --env AWS_ACCESS_KEY_ID=${{ secrets.AWS_ACCESS_KEY_ID }} \
+          --env AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_SECRET_ACCESS_KEY }}
